@@ -1,0 +1,35 @@
+name: Build HtStudio Engine
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Build
+        run: dotnet build HtStudioEngine.sln -c Release
+      - name: Pack sample
+        run: |
+          dotnet run --project src/HtStudioPack -c Release -- samples/hello-html hello.hts html
+      - name: Publish launcher
+        run: |
+          dotnet publish src/HtStudioLauncher -c Release -r win-x64 --self-contained false -o publish/launcher
+          dotnet publish src/HtStudioPack -c Release -r win-x64 --self-contained false -o publish/pack
+          copy hello.hts publish\launcher\
+      - name: Zip
+        shell: pwsh
+        run: Compress-Archive -Path publish\launcher\* -DestinationPath HtStudioEngine-win.zip -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HtStudioEngine-win
+          path: |
+            HtStudioEngine-win.zip
+            hello.hts
+          retention-days: 30
