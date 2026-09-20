@@ -9,7 +9,10 @@ static class Program
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
-        // Komut satırından .exe verilirse: doğrula + kütüphaneye ekle + başlat (opsiyonel kısayol)
+        // İlk açılış: gereksinimler (WebView2)
+        DependencyCheck.EnsureReady();
+
+        // Komut satırından .exe: doğrula, kütüphaneye ekle, başlat
         if (args.Length > 0 && File.Exists(args[0]) &&
             args[0].EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
         {
@@ -34,10 +37,8 @@ static class Program
                 AppLibrary.Save(apps);
             }
             MarkerVerifier.TryLaunch(args[0], out _);
-            // Hub'ı da aç
         }
 
-        // Bağımsız launcher arayüzü (Rockstar tarzı)
         Application.Run(new LauncherForm());
     }
 }
