@@ -200,38 +200,58 @@ public class LauncherForm : Form
         using var ofd = new OpenFileDialog
         {
             Title = "HtStudio uygulaması seç (.exe)",
-            Filter = "Windows uygulaması (*.exe)|*.exe",
+            Filter = "HtStudio (*.exe;*.hts)|*.exe;*.hts|EXE (*.exe)|*.exe|Paket (*.hts)|*.hts",
             CheckFileExists = true
         };
         if (ofd.ShowDialog(this) != DialogResult.OK) return;
 
-        var v = MarkerVerifier.VerifyExe(ofd.FileName);
-        if (!v.Ok)
+        var path = ofd.FileName;
+        string name;
+        string pkg = "";
+
+        if (path.EndsWith(".hts", StringComparison.OrdinalIgnoreCase))
         {
-            MessageBox.Show(this, v.Error, "HtStudio Launcher",
-                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            return;
+            var opened = PackageFormat.Open(path);
+            if (!opened.Ok)
+            {
+                MessageBox.Show(this, opened.Error, "HtStudio Launcher",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            name = string.IsNullOrWhiteSpace(opened.Manifest?.Name)
+                ? Path.GetFileNameWithoutExtension(path)
+                : opened.Manifest!.Name;
+            pkg = opened.Type.ToString();
+        }
+        else
+        {
+            var v = MarkerVerifier.VerifyExe(path);
+            if (!v.Ok)
+            {
+                MessageBox.Show(this, v.Error, "HtStudio Launcher",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            name = string.IsNullOrWhiteSpace(v.Info?.Name)
+                ? Path.GetFileNameWithoutExtension(path)
+                : v.Info!.Name;
+            pkg = v.Info?.Pkg ?? "";
         }
 
-        var name = string.IsNullOrWhiteSpace(v.Info?.Name)
-            ? Path.GetFileNameWithoutExtension(ofd.FileName)
-            : v.Info!.Name;
-
-        // Aynı yol varsa güncelle
         var existing = _apps.FirstOrDefault(x =>
-            string.Equals(x.ExePath, ofd.FileName, StringComparison.OrdinalIgnoreCase));
+            string.Equals(x.ExePath, path, StringComparison.OrdinalIgnoreCase));
         if (existing != null)
         {
             existing.Name = name;
-            existing.Pkg = v.Info?.Pkg ?? "";
+            existing.Pkg = pkg;
         }
         else
         {
             _apps.Add(new LibraryEntry
             {
                 Name = name,
-                ExePath = ofd.FileName,
-                Pkg = v.Info?.Pkg ?? ""
+                ExePath = path,
+                Pkg = pkg
             });
         }
         AppLibrary.Save(_apps);
@@ -259,20 +279,27 @@ public class LauncherForm : Form
             return;
         }
 
-        // Her başlatmada tekrar doğrula
-        var v = MarkerVerifier.VerifyExe(a.ExePath);
-        if (!v.Ok)
+        if (a.ExePath.EndsWith(".hts", StringComparison.OrdinalIgnoreCase))
         {
-            MessageBox.Show(this, v.Error, "HtStudio Launcher",
-                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            return;
+            PackageRunner.RunHts(a.ExePath, this);
         }
-
-        if (!MarkerVerifier.TryLaunch(a.ExePath, out var err))
+        else
         {
-            MessageBox.Show(this, "Başlatılamadı:\n" + err, "HtStudio",
-                MessageBoxButtons.OK, MessageBoxIcon.Error);
-            return;
+            // Her başlatmada tekrar doğrula
+            var v = MarkerVerifier.VerifyExe(a.ExePath);
+            if (!v.Ok)
+            {
+                MessageBox.Show(this, v.Error, "HtStudio Launcher",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!MarkerVerifier.TryLaunch(a.ExePath, out var err))
+            {
+                MessageBox.Show(this, "Başlatılamadı:\n" + err, "HtStudio",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
         }
 
         a.LastPlayed = DateTime.Now.ToString("g");
