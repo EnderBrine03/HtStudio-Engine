@@ -15,35 +15,36 @@ jobs:
           dotnet-version: "8.0.x"
 
       - name: Publish self-contained single-file Launcher
+        shell: pwsh
         run: |
-          dotnet publish src/HtStudioLauncher -c Release -r win-x64 --self-contained true ^
-            -p:PublishSingleFile=true ^
-            -p:IncludeNativeLibrariesForSelfExtract=true ^
-            -p:EnableCompressionInSingleFile=true ^
-            -p:DebugType=none ^
-            -p:DebugSymbols=false ^
+          dotnet publish src/HtStudioLauncher -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true `
+            -p:DebugType=none `
+            -p:DebugSymbols=false `
             -o publish/launcher
 
       - name: Publish Pack tool
+        shell: pwsh
         run: |
-          dotnet publish src/HtStudioPack -c Release -r win-x64 --self-contained true ^
-            -p:PublishSingleFile=true ^
-            -p:EnableCompressionInSingleFile=true ^
+          dotnet publish src/HtStudioPack -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:EnableCompressionInSingleFile=true `
             -o publish/pack
 
       - name: Pack sample hts
+        shell: pwsh
         run: |
           dotnet run --project src/HtStudioPack -c Release -- samples/hello-html publish/launcher/hello.hts html
 
       - name: List output
         shell: pwsh
-        run: |
-          Get-ChildItem publish/launcher | Format-Table Name, Length
+        run: Get-ChildItem publish/launcher | Format-Table Name, Length
 
       - name: Zip
         shell: pwsh
-        run: |
-          Compress-Archive -Path publish/launcher/* -DestinationPath HtStudioLauncher-win.zip -Force
+        run: Compress-Archive -Path publish/launcher/* -DestinationPath HtStudioLauncher-win.zip -Force
 
       - uses: actions/upload-artifact@v4
         with:
