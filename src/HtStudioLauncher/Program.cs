@@ -9,34 +9,41 @@ static class Program
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
-        // İlk açılış: gereksinimler (WebView2)
         DependencyCheck.EnsureReady();
 
-        // Komut satırından .exe: doğrula, kütüphaneye ekle, başlat
-        if (args.Length > 0 && File.Exists(args[0]) &&
-            args[0].EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+        if (args.Length > 0 && File.Exists(args[0]))
         {
-            var v = MarkerVerifier.VerifyExe(args[0]);
-            if (!v.Ok)
+            var path = Path.GetFullPath(args[0]);
+            var ext = Path.GetExtension(path).ToLowerInvariant();
+
+            if (ext == ".exe")
             {
-                MessageBox.Show(v.Error, "HtStudio Launcher",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            var apps = AppLibrary.Load();
-            var name = string.IsNullOrWhiteSpace(v.Info?.Name)
-                ? Path.GetFileNameWithoutExtension(args[0]) : v.Info!.Name;
-            if (!apps.Any(x => string.Equals(x.ExePath, args[0], StringComparison.OrdinalIgnoreCase)))
-            {
-                apps.Add(new LibraryEntry
+                var v = MarkerVerifier.VerifyExe(path);
+                if (!v.Ok)
                 {
-                    Name = name,
-                    ExePath = Path.GetFullPath(args[0]),
-                    Pkg = v.Info?.Pkg ?? ""
-                });
-                AppLibrary.Save(apps);
+                    MessageBox.Show(v.Error, "HtStudio Launcher",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                var apps = AppLibrary.Load();
+                var name = string.IsNullOrWhiteSpace(v.Info?.Name)
+                    ? Path.GetFileNameWithoutExtension(path) : v.Info!.Name;
+                if (!apps.Any(x => string.Equals(x.ExePath, path, StringComparison.OrdinalIgnoreCase)))
+                {
+                    apps.Add(new LibraryEntry
+                    {
+                        Name = name,
+                        ExePath = path,
+                        Pkg = v.Info?.Pkg ?? ""
+                    });
+                    AppLibrary.Save(apps);
+                }
+                MarkerVerifier.TryLaunch(path, out _);
             }
-            MarkerVerifier.TryLaunch(args[0], out _);
+            else if (ext == ".hts")
+            {
+                PackageRunner.RunHts(path);
+            }
         }
 
         Application.Run(new LauncherForm());
