@@ -1,5 +1,9 @@
 # HtStudio Engine (C# / Windows)
 
+**HtStudio Launcher** = bağımsız masaüstü uygulaması (Rockstar Games Launcher benzeri):
+kütüphane listesi, uygulama ekle, HTSTUDIO_APP_V1 doğrula, Oynat.
+
+
 Plana uygun **Windows-native** launcher:
 
 - **HtStudioLauncher** — `.hts` paketini açar, etiket/türü okur, hash doğrular, **HTML** içeriği **WebView2** ile gösterir
