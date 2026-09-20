@@ -55,3 +55,24 @@ Python/Java türleri etikette reserved; bu sürüm yalnızca HTML çalıştırı
 
 - Sahte **exe imzası** → Windows Authenticode
 - **HtStudio paketi mi / türü ne / bozulmuş mu** → Launcher (`HTS1` + hash)
+
+
+## HtStudio authenticity (Hugging Face builder)
+
+Space: [CrimsonSorcerer/htstudio-builder-exxe](https://huggingface.co/spaces/CrimsonSorcerer/htstudio-builder-exxe)
+
+**Magic:** `HTSTUDIO_APP_V1`
+
+Launcher checks (in order):
+
+1. `htstudio.marker` or `*.htstudio` next to the `.exe` (JSON must contain `"magic":"HTSTUDIO_APP_V1"`)
+2. `resources/htstudio.marker` (Electron install layout)
+3. Binary scan for ASCII `HTSTUDIO_APP_V1` inside the `.exe`
+
+If none match:
+
+> Sorry, this application was not developed with HtStudio. HtStudio Launcher only supports applications developed with HtStudio.
+
+Valid EXE → Launcher starts it with `Process.Start`.
+
+`.hts` packages (native HTML via WebView2) still work as before.
